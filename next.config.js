@@ -2,7 +2,7 @@
 const nextConfig = {
   reactStrictMode: true,
   // Optimize for Vercel deployment
-  output: 'standalone',
+  // Note: 'standalone' output is not needed for Vercel, it handles this automatically
 }
 
 module.exports = nextConfig
