@@ -1,0 +1,306 @@
+'use client'
+
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Plus, X } from 'lucide-react'
+
+export default function NewRecipePage() {
+  const router = useRouter()
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    ingredients: [''],
+    steps: [''],
+    tags: [''],
+    notes: '',
+    prepTime: '',
+    cookTime: '',
+    servings: '',
+    difficulty: 'medium' as 'easy' | 'medium' | 'hard',
+    cuisine: '',
+    dietaryTags: [''],
+    imageUrl: '',
+    isPublic: true,
+  })
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    setLoading(true)
+
+    try {
+      const ingredients = formData.ingredients.filter((i) => i.trim())
+      const steps = formData.steps.filter((s) => s.trim())
+      const tags = formData.tags.filter((t) => t.trim())
+      const dietaryTags = formData.dietaryTags.filter((d) => d.trim())
+
+      if (!formData.title || ingredients.length === 0 || steps.length === 0) {
+        setError('Please fill in all required fields')
+        return
+      }
+
+      const response = await fetch('/api/recipes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...formData,
+          ingredients,
+          steps,
+          tags,
+          dietaryTags,
+          prepTime: formData.prepTime ? parseInt(formData.prepTime) : undefined,
+          cookTime: formData.cookTime ? parseInt(formData.cookTime) : undefined,
+          servings: formData.servings ? parseInt(formData.servings) : undefined,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        setError(data.error || 'Failed to create recipe')
+        return
+      }
+
+      router.push(`/recipes/${data.recipe.id}`)
+    } catch (err) {
+      setError('Something went wrong. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const addIngredient = () => {
+    setFormData({ ...formData, ingredients: [...formData.ingredients, ''] })
+  }
+
+  const removeIngredient = (index: number) => {
+    setFormData({
+      ...formData,
+      ingredients: formData.ingredients.filter((_, i) => i !== index),
+    })
+  }
+
+  const addStep = () => {
+    setFormData({ ...formData, steps: [...formData.steps, ''] })
+  }
+
+  const removeStep = (index: number) => {
+    setFormData({
+      ...formData,
+      steps: formData.steps.filter((_, i) => i !== index),
+    })
+  }
+
+  const addTag = () => {
+    setFormData({ ...formData, tags: [...formData.tags, ''] })
+  }
+
+  const removeTag = (index: number) => {
+    setFormData({
+      ...formData,
+      tags: formData.tags.filter((_, i) => i !== index),
+    })
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-orange-50 to-white py-8">
+      <div className="container mx-auto px-4 max-w-4xl">
+        <Card>
+          <CardHeader>
+            <CardTitle>Create New Recipe</CardTitle>
+            <CardDescription>
+              Share your culinary creation with the community
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {error && (
+                <div className="p-3 text-sm text-destructive bg-destructive/10 rounded-md">
+                  {error}
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="title">Title *</Label>
+                <Input
+                  id="title"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  rows={3}
+                />
+              </div>
+
+              <div className="grid md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="prepTime">Prep Time (minutes)</Label>
+                  <Input
+                    id="prepTime"
+                    type="number"
+                    value={formData.prepTime}
+                    onChange={(e) => setFormData({ ...formData, prepTime: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="cookTime">Cook Time (minutes)</Label>
+                  <Input
+                    id="cookTime"
+                    type="number"
+                    value={formData.cookTime}
+                    onChange={(e) => setFormData({ ...formData, cookTime: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="servings">Servings</Label>
+                  <Input
+                    id="servings"
+                    type="number"
+                    value={formData.servings}
+                    onChange={(e) => setFormData({ ...formData, servings: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="ingredients">Ingredients *</Label>
+                {formData.ingredients.map((ingredient, index) => (
+                  <div key={index} className="flex gap-2 mb-2">
+                    <Input
+                      value={ingredient}
+                      onChange={(e) => {
+                        const newIngredients = [...formData.ingredients]
+                        newIngredients[index] = e.target.value
+                        setFormData({ ...formData, ingredients: newIngredients })
+                      }}
+                      placeholder="e.g., 2 cups flour"
+                    />
+                    {formData.ingredients.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeIngredient(index)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+                <Button type="button" variant="outline" onClick={addIngredient}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Ingredient
+                </Button>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="steps">Steps *</Label>
+                {formData.steps.map((step, index) => (
+                  <div key={index} className="flex gap-2 mb-2">
+                    <Textarea
+                      value={step}
+                      onChange={(e) => {
+                        const newSteps = [...formData.steps]
+                        newSteps[index] = e.target.value
+                        setFormData({ ...formData, steps: newSteps })
+                      }}
+                      placeholder={`Step ${index + 1}`}
+                      rows={2}
+                    />
+                    {formData.steps.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeStep(index)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+                <Button type="button" variant="outline" onClick={addStep}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Step
+                </Button>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="tags">Tags</Label>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {formData.tags.map((tag, index) => (
+                    <div key={index} className="flex gap-2">
+                      <Input
+                        value={tag}
+                        onChange={(e) => {
+                          const newTags = [...formData.tags]
+                          newTags[index] = e.target.value
+                          setFormData({ ...formData, tags: newTags })
+                        }}
+                        placeholder="e.g., Italian"
+                        className="w-32"
+                      />
+                      {formData.tags.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeTag(index)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <Button type="button" variant="outline" onClick={addTag}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Tag
+                </Button>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="imageUrl">Image URL</Label>
+                <Input
+                  id="imageUrl"
+                  type="url"
+                  value={formData.imageUrl}
+                  onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+                  placeholder="https://example.com/image.jpg"
+                />
+              </div>
+
+              <div className="flex gap-4">
+                <Button type="submit" disabled={loading}>
+                  {loading ? 'Creating...' : 'Create Recipe'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => router.back()}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
+}

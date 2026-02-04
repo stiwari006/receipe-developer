@@ -1,0 +1,156 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  username      String    @unique
+  password      String
+  bio           String?
+  avatar        String?
+  isPro         Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  recipes       Recipe[]
+  forks         Recipe[]  @relation("RecipeForks")
+  follows       Follow[]  @relation("UserFollows")
+  followers     Follow[]  @relation("UserFollowers")
+  pullRequests  PullRequest[]
+  comments      Comment[]
+  likes         Like[]
+}
+
+model Recipe {
+  id            String    @id @default(cuid())
+  title         String
+  description   String?
+  ingredients   String   // JSON string of ingredients array
+  steps         String   // JSON string of steps array
+  tags          String   // JSON string of tags array
+  notes         String?
+  prepTime      Int?      // in minutes
+  cookTime      Int?      // in minutes
+  servings      Int?
+  difficulty    String?   // easy, medium, hard
+  cuisine       String?
+  dietaryTags   String    // JSON string of dietary tags (vegan, gluten-free, etc.)
+  imageUrl      String?
+  
+  authorId      String
+  author        User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  
+  forkedFromId  String?
+  forkedFrom    Recipe?   @relation("RecipeForks", fields: [forkedFromId], references: [id])
+  forks         Recipe[]  @relation("RecipeForks")
+  
+  isPublic      Boolean   @default(true)
+  isArchived    Boolean   @default(false)
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  commits       Commit[]
+  pullRequests  PullRequest[]
+  comments      Comment[]
+  likes         Like[]
+  
+  @@index([authorId])
+  @@index([forkedFromId])
+  @@index([isPublic])
+}
+
+model Commit {
+  id            String    @id @default(cuid())
+  recipeId      String
+  recipe        Recipe    @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  
+  message       String
+  changes       String    // JSON string of changes
+  version       Int       @default(1)
+  
+  createdAt     DateTime  @default(now())
+  
+  @@index([recipeId])
+}
+
+model PullRequest {
+  id            String    @id @default(cuid())
+  title         String
+  description   String?
+  
+  recipeId      String
+  recipe        Recipe    @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  
+  authorId      String
+  author        User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  
+  changes       String    // JSON string of proposed changes
+  status        String    @default("open") // open, merged, closed
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  @@index([recipeId])
+  @@index([authorId])
+  @@index([status])
+}
+
+model Comment {
+  id            String    @id @default(cuid())
+  content       String
+  
+  recipeId      String
+  recipe        Recipe    @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  
+  authorId      String
+  author        User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  @@index([recipeId])
+  @@index([authorId])
+}
+
+model Like {
+  id            String    @id @default(cuid())
+  
+  recipeId      String
+  recipe        Recipe    @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  createdAt     DateTime  @default(now())
+  
+  @@unique([recipeId, userId])
+  @@index([recipeId])
+  @@index([userId])
+}
+
+model Follow {
+  id            String    @id @default(cuid())
+  
+  followerId    String
+  follower      User      @relation("UserFollows", fields: [followerId], references: [id], onDelete: Cascade)
+  
+  followingId   String
+  following     User      @relation("UserFollowers", fields: [followingId], references: [id], onDelete: Cascade)
+  
+  createdAt     DateTime  @default(now())
+  
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+}

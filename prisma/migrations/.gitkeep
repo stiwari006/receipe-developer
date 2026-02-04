@@ -1,0 +1,2 @@
+# Prisma migrations will be stored here
+# Run `npx prisma migrate dev` to create migrations
