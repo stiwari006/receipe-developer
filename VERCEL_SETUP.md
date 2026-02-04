@@ -18,11 +18,20 @@
 
 In Vercel Dashboard → Your Project → Settings → Environment Variables:
 
+**IMPORTANT**: Add these BEFORE your first build:
+
 ```
 DATABASE_URL=postgresql://user:password@host:5432/database?schema=public
 NEXTAUTH_URL=https://your-app.vercel.app
 NEXTAUTH_SECRET=<generate-secret>
 ```
+
+**Note**: Even if you don't have a database yet, you can use a dummy `DATABASE_URL` for the build:
+```
+DATABASE_URL=postgresql://user:password@localhost:5432/dummy?schema=public
+```
+
+The build script will handle this automatically, but setting it explicitly is recommended.
 
 **Generate NEXTAUTH_SECRET:**
 ```bash
